@@ -28,8 +28,14 @@ namespace ICDIBasic
         #endregion
 
         #region Members
+<<<<<<< HEAD
+        
+        private bool m_IsFD;                                 // Saves the desired connection mode
+
+=======
 
         private bool m_IsFD;                                 // Saves the desired connection mode
+>>>>>>> origin/zy
         public static TPCANHandle m_PcanHandle;             // Saves the handle of a PCAN hardware
         /// <summary>
         /// Saves the baudrate register for a conenction
@@ -506,11 +512,19 @@ namespace ICDIBasic
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             // 结束运动
+<<<<<<< HEAD
+            if(tr != null)
+            {
+                tr.clearValue();
+            }
+           
+=======
             if (tr != null)
             {
                 tr.clearValue();
             }
 
+>>>>>>> origin/zy
             tMMainFormRefresh.Stop();
 
             // Releases the used PCAN-Basic channel

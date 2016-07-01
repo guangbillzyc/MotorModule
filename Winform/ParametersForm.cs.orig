@@ -118,7 +118,10 @@ namespace ICDIBasic
             paraRelection.Add(0x5c, new ParameterStruct("S_CURRENT_FD", "0-100", "-", "R/W", "前馈参数1"));
             paraRelection.Add(0x5d, new ParameterStruct("M_CURRENT_FD", "0-100", "-", "R/W", "前馈参数2"));
             paraRelection.Add(0x5e, new ParameterStruct("L_CURRENT_FD", "0-100", "-", "R/W", "前馈参数3"));
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/zy
 
             paraRelection.Add(0x61, new ParameterStruct("M_CURRENT_P", "0-100", "-", "R/W", "M电流环P参数"));
             paraRelection.Add(0x62, new ParameterStruct("M_CURRENT_I", "0-100", "-", "R/W", "M电流环I参数"));

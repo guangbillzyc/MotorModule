@@ -43,8 +43,11 @@ namespace ICDIBasic
         public static bool EnableScope = false;
 
         public static bool EnableFrictionMeasure = false;
+        public static bool EnableCurrentCompensation = false;
+
         public static List<float> currentC = new List<float>();
         public static List<float> currentS = new List<float>();
+        public static List<int> currentT = new List<int>();
         public static List<float> currentA = new List<float>();
 
 
@@ -58,7 +61,11 @@ namespace ICDIBasic
         public static byte POSITION_P = 0x68;	  //位置环P参数
         public static byte POSITION_I = 0x69;	  //位置环I参数
         public static byte POSITION_D = 0x6A;	  //位置环D参数
-        public static byte POSITION_DS = 0x6B;	  //位置P死区
+        public static byte POSITION_DS = 0x6B;    //位置P死区
+
+
+        public static float measureCurrent = 0;          //实际电流
+        public static float measureSpeed = 0;          //实际电流
 
         public OscilloScope()
         {
@@ -222,7 +229,6 @@ namespace ICDIBasic
                     int m = pointY.Length;
                     if (m > 1)
                     {
-                     
                         PointF[] points = new PointF[m];
                       
                         if (showItems[i].Item ==   Configuration.SCP_TAGCUR_L || showItems[i].Item == Configuration.SCP_MEACUR_L)
@@ -542,13 +548,18 @@ namespace ICDIBasic
             {
                 if (showItems[i].IsCheck && showItems[i].sq != null)
                 {
+                    double ratio = 1.0;
+                    if(showItems[i].Item == Configuration.SCP_TAGSPD_L || showItems[i].Item == Configuration.SCP_MEASPD_L)
+                    {
+                        ratio = 60.0 / 65536.0;
+                    }
                     try
                     {
-                        int pV1 = GetPointerValue(showItems[i].sq, tracePos1);
-                        int pV2 = GetPointerValue(showItems[i].sq, tracePos2);
-                        float pAverage = showItems[i].sq.GetAverageValue(tracePos1, tracePos2);
-                        float maxValue = showItems[i].sq.GetMaxValue(tracePos1, tracePos2);
-                        float minValue = showItems[i].sq.GetMinValue(tracePos1, tracePos2);
+                        int pV1 = Convert.ToInt32(GetPointerValue(showItems[i].sq, tracePos1) * ratio);
+                        int pV2 = Convert.ToInt32(GetPointerValue(showItems[i].sq, tracePos2) * ratio);
+                        float pAverage = Convert.ToSingle(showItems[i].sq.GetAverageValue(tracePos1, tracePos2) * ratio);
+                        float maxValue = Convert.ToSingle(showItems[i].sq.GetMaxValue(tracePos1, tracePos2) * ratio);
+                        float minValue = Convert.ToSingle(showItems[i].sq.GetMinValue(tracePos1, tracePos2) * ratio);
                         lVPointer.Items[j].SubItems[1].Text = "";
                         lVPointer.Items[j].SubItems[2].Text = pV1.ToString();
                         lVPointer.Items[j].SubItems[3].Text = pV2.ToString();
@@ -557,6 +568,16 @@ namespace ICDIBasic
                         lVPointer.Items[j].SubItems[6].Text = maxValue.ToString();
                         lVPointer.Items[j].SubItems[7].Text = minValue.ToString();
                         j++;
+
+                        //取出实际电流、实际速度值，用于计算摩擦参数
+                        if(showItems[i].Item == Configuration.SCP_MEASPD_L)
+                        {
+                            measureSpeed = pAverage;
+                        }
+                        else if(showItems[i].Item == Configuration.SCP_MEACUR_L)
+                        {
+                            measureCurrent = pAverage;
+                        }
                     }
                     catch (System.Exception ex)
                     {
@@ -833,15 +854,24 @@ namespace ICDIBasic
                     MessageBox.Show("请输入合法的数据!");
                     MainForm.GetInstance().sBFeedbackShow(ex.Message, 1);
                 }
-                
             }
-           
         }
 
         private void btnFriction_Click(object sender, EventArgs e)
         {
+            pc.WriteOneWord(Configuration.TAG_WORK_MODE, Configuration.MODE_SPEED, PCan.currentID);
+            int value = Convert.ToInt32(1500 / 60.0 * 65536.0);
+            pc.WriteTwoWords(Configuration.TAG_SPEED_L, value, PCan.currentID);
+
+            OscilloScope.Mask = 10;
+            pc.WriteOneWord(Configuration.SCP_MASK, OscilloScope.Mask, PCan.currentID);       //打开电流 速度发送开关
+            MotionControl.tCount = 0;
             EnableFrictionMeasure = true;
-            
+        }
+
+        private void btnCurrentCompensation_Click(object sender, EventArgs e)
+        {
+            EnableCurrentCompensation = true;
         }
 
         #region 用鼠标拖拽移动窗体
@@ -882,7 +912,21 @@ namespace ICDIBasic
         {
             this.BringToFront();
         }
-      
+
+        private void nUSmoothData_ValueChanged(object sender, EventArgs e)
+        {
+            switch(Convert.ToInt32(nUSmoothData.Value))
+            {
+                case 0: MotionControl.kfQ = 0.0; MotionControl.kfR = 0.0; break;
+                case 1: MotionControl.kfQ = 0.1; MotionControl.kfR = 0.1; break;
+                case 2: MotionControl.kfQ = 0.1; MotionControl.kfR = 10; break;
+                case 3: MotionControl.kfQ = 0.01; MotionControl.kfR = 50; break;
+                case 4: MotionControl.kfQ = 10; MotionControl.kfR = 0.1; break;
+                case 5: MotionControl.kfQ = 50; MotionControl.kfR = 0.01; break;
+            }
+        }
+
+       
     }
 
     public class ShowItem

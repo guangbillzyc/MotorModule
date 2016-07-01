@@ -108,6 +108,8 @@ namespace ICDIBasic
             {
                 clearValue();
             }
+
+            IniFile.WritePrivateProfileString("TestRun", "ControlMode", cBControlMode.SelectedIndex.ToString(), IniFile.StrProPath);
         }
 
         private void tBFrequency_TextChanged(object sender, EventArgs e)

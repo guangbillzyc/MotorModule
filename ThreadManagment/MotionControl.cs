@@ -43,7 +43,7 @@ namespace ICDIBasic
         static bool s_bHigh = false;
         static int s_iCount = 0;
         static int s_iCountforwave = 0;
-        static int tCount = 0;
+        public static int tCount = 0;
 
         static int gatherCount = 0;
 
@@ -55,12 +55,31 @@ namespace ICDIBasic
         bool running = true;                           //the flag to control the thread
         Thread thread;
 
-        private int intervalMs;                     // interval in mimliseccond;
+        private float intervalMs;                     // interval in mimliseccond;
         private long intevalTicks;
         private long nextTriggerTime;               // the time when next task will be executed
 
+
+        public static double kfQ = 30.0;             // measure noise
+        public static double kfR = 0.2;              // system noise
+
+        private double[] kfP = new double[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+        private double[] kfN = new double[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+        private double[] kfK = new double[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+
+        public delegate void MessageEventHandler(object sender, MessageEventArgs e);
+        //定义事件
+        public event MessageEventHandler MessageSend;
+
+        public void OnMessageSend(object sender, MessageEventArgs e)
+        {
+            if (MessageSend != null)
+                this.MessageSend(sender, e);
+        }
+
+
         // Timer inteval in milisecond
-        public int Interval
+        public float Interval
         {
             get { return intervalMs; }
             set
@@ -81,7 +100,7 @@ namespace ICDIBasic
                 throw new Win32Exception("QueryPerformanceFrequency() function is not supported");
             }
 
-            Interval = 1;                      //定时精度 1ms
+            Interval = 0.5f;                      //定时精度 1ms
 
             thread = new Thread(new ThreadStart(ThreadProc));
             thread.Name = "HighAccuracyTimer";
@@ -221,6 +240,21 @@ namespace ICDIBasic
                                 value = BitConverter.ToInt32(new byte[] { value1[0], value1[1], value2[0], value2[1] }, 0);
                             }
 
+                            try
+                            {
+                                int oldValue = OscilloScope.showItems[i].sq.rear.Value;
+                                kfN[i] = kfP[i] + kfQ;
+                                kfK[i] = kfN[i] / (kfN[i] + kfR);
+                                value = Convert.ToInt32(oldValue + kfK[i] * (value - oldValue));
+                                kfP[i] = (1 - kfK[i] * kfN[i]);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                //MessageBox.Show("请输入合法的数据!");
+                                //MainForm.GetInstance().sBFeedbackShow(ex.Message, 1);
+                            }
+
+
                             OscilloScope.showItems[i].sq.EnQ(value);
                             //if (OscilloScope.showItems[i].Item == Configuration.SYS_SPEED_L)
                             //{
@@ -236,53 +270,75 @@ namespace ICDIBasic
             }
             if (OscilloScope.EnableFrictionMeasure)
             {
-                tCount++;
-                if (tCount % 2 == 0)
+                float err = 0;
+                int speed = getSpeed(tCount,ref err);
+                if (Math.Abs(OscilloScope.measureSpeed - speed) < err)
                 {
-                    pc.ReadWords(Configuration.SYS_CURRENT_L, 4, PCan.currentID);
-                    double tempf = Math.Sin(tCount * Math.PI / 5000) * 1000 / 60.0 * 65536;
-                    pc.WriteTwoWords(Configuration.TAG_SPEED_L, (int)(tempf), PCan.currentID);
-                }
-                if (tCount >= 3000 && tCount % 2 == 0 && tCount <= 7000)
-                {
-                    byte[] value1 = BitConverter.GetBytes(Configuration.MemoryControlTable[Configuration.SYS_CURRENT_L]);
-                    byte[] value2 = BitConverter.GetBytes(Configuration.MemoryControlTable[Configuration.SYS_CURRENT_L + 1]);
-                    float current = BitConverter.ToInt32(new byte[] { value1[0], value1[1], value2[0], value2[1] }, 0);
-                    OscilloScope.currentC.Add(current);
-
-                    value1 = BitConverter.GetBytes(Configuration.MemoryControlTable[Configuration.SYS_SPEED_L]);
-                    value2 = BitConverter.GetBytes(Configuration.MemoryControlTable[Configuration.SYS_SPEED_L + 1]);
-                    float speed = (float)(BitConverter.ToInt32(new byte[] { value1[0], value1[1], value2[0], value2[1] }, 0) * 60.0 / 65536.0);
-                    OscilloScope.currentS.Add(speed);
-                }
-                
-                if (tCount == 10000)
-                {
-                    tCount = 0;
-                    //OscilloScope.currentS[0] = (float)(OscilloScope.currentS[0] * Math.PI / 30);
-                    //for (int i = 1; i < OscilloScope.currentS.Count;i++ )
-                    //{
-                    //    OscilloScope.currentS[i] = (float)(OscilloScope.currentS[i] * Math.PI / 30);
-                    //    //OscilloScope.currentA.Add((float)((OscilloScope.currentS[i] - OscilloScope.currentS[i - 1]) / 0.002));
-                    //}
-                    FileStream fs1 = new FileStream("D:a.txt", FileMode.Create, FileAccess.Write, FileShare.None);
+                  
+                    FileStream fs1 = new FileStream("D:\\cc.txt", FileMode.Append, FileAccess.Write, FileShare.None);
                     StreamWriter sw1 = new StreamWriter(fs1, Encoding.Default);
-                    //for (int i = 0; i < OscilloScope.currentA.Count; i++)
-                    //{
-                    //    if (OscilloScope.currentA[i] != 0)
-                    //    {
-                    //        sw1.WriteLine(OscilloScope.currentA[i].ToString() + " " + Math.Sign(OscilloScope.currentS[i]).ToString() + " " + OscilloScope.currentS[i].ToString() + " " + OscilloScope.currentC[i].ToString());
-                    //    }
-                    //}
-                    for (int i = 0; i < OscilloScope.currentS.Count; i++)
-                    {
-                        sw1.WriteLine(Math.Sign(OscilloScope.currentS[i]).ToString() + " " + OscilloScope.currentS[i].ToString() + " " + OscilloScope.currentC[i].ToString());
-                    }
+                    sw1.WriteLine(speed.ToString() + " " + OscilloScope.measureCurrent.ToString());
                     sw1.Flush();
                     sw1.Close();
                     fs1.Close();
+                    this.OnMessageSend(this, new MessageEventArgs("MotionControl", "Measure " + speed + " done!"));
+                 
+                    tCount++;
+                    speed = getSpeed(tCount, ref err);
+                    int value = Convert.ToInt32(speed / 60.0 * 65536.0);
+                    pc.WriteTwoWords(Configuration.TAG_SPEED_L, value, PCan.currentID);
+
+                    if (tCount == 94)
+                    {
+                        OscilloScope.EnableFrictionMeasure = false;
+                        MessageBox.Show("Measure process finished!");
+                    }
                 }
+                //if (tCount >= 100 && tCount <= 2300)
+                //{
+                //    //电流
+                //    byte[] value1 = BitConverter.GetBytes(Configuration.MemoryControlTable[Configuration.SCP_MEACUR_L]);
+                //    byte[] value2 = BitConverter.GetBytes(Configuration.MemoryControlTable[Configuration.SCP_MEACUR_H]);
+                //    float current = BitConverter.ToInt32(new byte[] { value1[0], value1[1], value2[0], value2[1] }, 0);
+                //    OscilloScope.currentC.Add(0.118f * current / 1000.0f);
+
+                //    //速度
+                //    value1 = BitConverter.GetBytes(Configuration.MemoryControlTable[Configuration.SCP_MEASPD_L]);
+                //    value2 = BitConverter.GetBytes(Configuration.MemoryControlTable[Configuration.SCP_MEASPD_H]);
+                //    float speed = (float)(BitConverter.ToInt32(new byte[] { value1[0], value1[1], value2[0], value2[1] }, 0) * 2.0 * Math.PI / 65536.0); // rad/s
+                //    OscilloScope.currentS.Add(speed);
+
+                //    OscilloScope.currentT.Add(DateTime.Now.Millisecond);
+                //}
+                
+                //if (tCount == 2300)
+                //{
+                //    tCount = 0;
+                //    for (int i = 0; i < OscilloScope.currentS.Count; i++)
+                //    {
+                //        sw1.WriteLine(Math.Sign(OscilloScope.currentS[i]).ToString() + " " + OscilloScope.currentS[i].ToString() + " " 
+                //                      + OscilloScope.currentC[i].ToString() + " " + OscilloScope.currentT[i].ToString());
+                //    }
+                //    OscilloScope.EnableFrictionMeasure = false;
+                //}
               
+            }
+
+            if (OscilloScope.EnableCurrentCompensation)
+            {
+                if(OscilloScope.measureSpeed < 0.5)
+                {
+                    pc.WriteTwoWords(Configuration.TAG_CURRENT_L, 192, PCan.currentID);
+                }
+                else if(OscilloScope.measureSpeed < 95)
+                {
+                    int value = Convert.ToInt32(156.0648 - (OscilloScope.measureSpeed - 1) / 94.0 * (156.0648 - 146.6248));
+                    pc.WriteTwoWords(Configuration.TAG_CURRENT_L, value, PCan.currentID);
+                }
+                else
+                {
+                    int value = Convert.ToInt32(-0.000036681545 * OscilloScope.measureSpeed * OscilloScope.measureSpeed + 0.22859848 * OscilloScope.measureSpeed + 126.16865);
+                }
             }
         }
 
@@ -311,12 +367,47 @@ namespace ICDIBasic
             }
         }
 
+        int getSpeed(int i, ref float err)
+        {
+            if (i <= 30)
+            {
+                err = 3;            //1500 - 600
+                return (30 - i) * 30 + 600;
+            }
+            else if (i <= 45)
+            {
+                err = 2;
+                return (45 - i) * 20 + 300;
+            }                         //600 - 300
+            else if (i <= 64)
+            {
+                err = 1;                //300 - 110
+                return (64 - i) * 10 + 110;
+            }                        
+            else if (i <= 84)
+            {
+                err = 0.5f;              //110 - 10   
+                return (84 - i) * 5 + 10;                          
+            }
+            else if (i <= 93)
+            {
+                err = 0.1f;
+                return (94 - i);                            //10 - 1
+            }
+
+            return 0;
+        }
+
         public bool GetTick(out long currentTickCount)
         {
             if (QueryPerformanceCounter(out currentTickCount) == false)
+            {
                 throw new Win32Exception("QueryPerformanceCounter() failed!");
+            }
             else
+            {
                 return true;
+            } 
         }
 
         public void Start()

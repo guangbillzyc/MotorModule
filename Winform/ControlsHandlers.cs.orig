@@ -762,13 +762,19 @@ namespace ICDIBasic
                     tMCheck.Enabled = false;
                     MessageBox.Show("模块" + cBID.Text + "已断开连接！");
                 }
-            }
-            pc.ReadOneWord(Configuration.SYS_POSITION_H, PCan.currentID);
+<<<<<<< HEAD
+            }        
+
             if(cBID.Text != "")
             {
                 pc.ReadOneWord(Configuration.SYS_POSITION_H, PCan.currentID);
                 tBMultiTurn.Text = Configuration.MemoryControlTable[Configuration.SYS_POSITION_H].ToString();
             }
+=======
+            }
+            pc.ReadOneWord(Configuration.SYS_POSITION_H, PCan.currentID);
+            tBMultiTurn.Text = Configuration.MemoryControlTable[Configuration.SYS_POSITION_H].ToString();
+>>>>>>> origin/zy
         }
 
         #endregion

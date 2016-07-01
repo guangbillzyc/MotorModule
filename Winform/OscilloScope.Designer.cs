@@ -113,6 +113,7 @@
             this.label16 = new System.Windows.Forms.Label();
             this.pBExit = new System.Windows.Forms.PictureBox();
             this.pBSetUp = new System.Windows.Forms.PictureBox();
+            this.btnCurrentCompensation = new System.Windows.Forms.Button();
             this.pLBoard.SuspendLayout();
             this.pLRange.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pBRecordImage)).BeginInit();
@@ -538,7 +539,7 @@
             this.nUSmoothData.Font = new System.Drawing.Font("宋体", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.nUSmoothData.Location = new System.Drawing.Point(3, 83);
             this.nUSmoothData.Maximum = new decimal(new int[] {
-            10,
+            5,
             0,
             0,
             0});
@@ -546,6 +547,7 @@
             this.nUSmoothData.Size = new System.Drawing.Size(48, 29);
             this.nUSmoothData.TabIndex = 3;
             this.nUSmoothData.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.nUSmoothData.ValueChanged += new System.EventHandler(this.nUSmoothData_ValueChanged);
             // 
             // rBPointer2
             // 
@@ -968,6 +970,7 @@
             // 
             // tabPage5
             // 
+            this.tabPage5.Controls.Add(this.btnCurrentCompensation);
             this.tabPage5.Controls.Add(this.btnFriction);
             this.tabPage5.Location = new System.Drawing.Point(4, 31);
             this.tabPage5.Name = "tabPage5";
@@ -978,11 +981,12 @@
             // 
             // btnFriction
             // 
-            this.btnFriction.Location = new System.Drawing.Point(20, 16);
+            this.btnFriction.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnFriction.BackgroundImage")));
+            this.btnFriction.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.btnFriction.Location = new System.Drawing.Point(8, 13);
             this.btnFriction.Name = "btnFriction";
-            this.btnFriction.Size = new System.Drawing.Size(75, 32);
+            this.btnFriction.Size = new System.Drawing.Size(127, 53);
             this.btnFriction.TabIndex = 0;
-            this.btnFriction.Text = "摩擦";
             this.btnFriction.UseVisualStyleBackColor = true;
             this.btnFriction.Click += new System.EventHandler(this.btnFriction_Click);
             // 
@@ -1037,6 +1041,17 @@
             this.pBSetUp.Size = new System.Drawing.Size(52, 52);
             this.pBSetUp.TabIndex = 0;
             this.pBSetUp.TabStop = false;
+            // 
+            // btnCurrentCompensation
+            // 
+            this.btnCurrentCompensation.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btnCurrentCompensation.BackgroundImage")));
+            this.btnCurrentCompensation.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.btnCurrentCompensation.Location = new System.Drawing.Point(155, 13);
+            this.btnCurrentCompensation.Name = "btnCurrentCompensation";
+            this.btnCurrentCompensation.Size = new System.Drawing.Size(166, 53);
+            this.btnCurrentCompensation.TabIndex = 0;
+            this.btnCurrentCompensation.UseVisualStyleBackColor = true;
+            this.btnCurrentCompensation.Click += new System.EventHandler(this.btnCurrentCompensation_Click);
             // 
             // OscilloScope
             // 
@@ -1169,5 +1184,6 @@
         private System.Windows.Forms.Label label16;
         private System.Windows.Forms.PictureBox pBExit;
         private System.Windows.Forms.PictureBox pBSetUp;
+        private System.Windows.Forms.Button btnCurrentCompensation;
     }
 }
